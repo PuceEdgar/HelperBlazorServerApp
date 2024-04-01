@@ -1,10 +1,5 @@
-﻿using NPOI.HPSF;
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-using System.Globalization;
-using System.IO;
-using System.IO.Compression;
-using System.Numerics;
 
 namespace FileProcessingLibrary.Services;
 
@@ -16,50 +11,6 @@ public class ExcelService : IExcelService
         var sheet = wb.GetSheetAt(sheetNumber);
 
         return ReadColumnFromSheet(sheet, startingRow, columnNumber, isMaster);
-    }
-
-    public Dictionary<FileSource, List<string>> ExtractPartsData(Dictionary<FileSource, ZipArchiveEntry> data)
-    {
-        var partsData = new Dictionary<FileSource, List<string>>();
-
-        foreach (var item in data)
-        {
-            using var stream = item.Value.Open();
-            var parts = item.Key switch
-            {
-                FileSource.Master => ReadPartDataFromStream(stream, 1, 4, 6, true),
-                FileSource.RbBacklog => ReadPartDataFromStream(stream, 0, 1, 21),
-                FileSource.RbBilling => ReadPartDataFromStream(stream, 0, 4, 21),
-                FileSource.Mfg => ReadPartDataFromStream(stream, 0, 1, 4),
-                _ => []
-            };
-            partsData.Add(item.Key, parts);
-        }
-
-        return partsData;
-    }
-
-    public async Task<List<StockDetails>> ExtractStockDetailsFromCsvStream(Stream stream)
-    {
-        var stockDetailsList = new List<StockDetails>();
-
-        using var dataReader = new StreamReader(stream, System.Text.Encoding.UTF8, true);
-        var headerLine = await dataReader.ReadLineAsync();
-        string? line;
-        while ((line = await dataReader.ReadLineAsync()) != null)
-        {
-            var lineArray = line.Split(',');
-            var stockData = new StockDetails
-            {
-                CustomerNumber = lineArray[4],
-                PartNumber = lineArray[8],
-                Qty = int.TryParse(lineArray[10], out int result) ? result : 0,
-                UnitPrice = CalculateUnitPrice(lineArray)
-            };
-            stockDetailsList.Add(stockData);
-        }
-
-        return stockDetailsList;
     }
 
     public async Task<List<StockDetails>> ExtractStockDetailsFromExcelStream(Stream stream, FileSource fileSource)
@@ -215,30 +166,6 @@ public class ExcelService : IExcelService
         int decimalCount = BitConverter.GetBytes(decimal.GetBits(mfgPrice)[3])[2];
         var rbRoundedPRice = decimal.Round(rbPrice, decimalCount, MidpointRounding.ToPositiveInfinity);
         return rbRoundedPRice;
-    }
-
-    //private static T GetNumberfromCell<T>(ICell cell) where T : INumber<T>
-    //{
-    //    if (cell.CellType == CellType.Numeric)
-    //    {
-    //        return (T)Convert.ChangeType(cell.NumericCellValue, typeof(T));
-    //    } else if (cell.CellType == CellType.String && T.TryParse(cell.StringCellValue, CultureInfo.InvariantCulture, out var value))
-    //    {
-
-    //        return value;
-    //    }
-    //    else
-    //    {
-    //        return (T)Convert.ChangeType(0, typeof(T));
-    //    }
-    //}
-
-    private static decimal CalculateUnitPrice(string[] lineArray)
-    {
-        var amount = decimal.TryParse(lineArray[11], out decimal a) ? a : 0;
-        var qty = decimal.TryParse(lineArray[10], out decimal q) ? q : 0;
-
-        return amount > 0 && qty > 0 ? amount / qty : 0;
     }
 
     private static List<string> ReadColumnFromSheet(ISheet sheet, int startingRow, int columnNumber, bool isMasterFile)

@@ -4,14 +4,13 @@
 @using System.IO.Compression
 @using System.Text
 @using System.Text.Json.Serialization
-@inject IZipFileService FileProcessingService
 @inject IExcelService ExcelService
 @inject IDataComparerService DataComparerService
 @inject IJSRuntime JS
 
 <PageTitle>Compare parts</PageTitle>
 
-<h1>Compare parts</h1>
+<h1>Compare Bill UP / DOWN parts</h1>
 <h5>You can upload up to 4 files at the same time. There MUST be REN CORE master file and any file of RB billing, RB backlog and MFG.</h5>
 <br/>
 <p>REN CORE file name <b>must(!)</b> have <b>master</b> in its name</p>
@@ -70,24 +69,6 @@
     private bool isFileProcessed;
     string? report = null;
 
-    // private async void ProcessFile(InputFileChangeEventArgs e)
-    // {
-    //     isFileProcessed = false;
-    //     processingStatus = "Processing your file...";
-    //     loadedFiles.Clear();
-    //     foundDuplicates.Clear();
-    //     loadedFiles.Add(e.File);
-    //     await using var ms = new MemoryStream();
-    //     await e.File.OpenReadStream(maxSize).CopyToAsync(ms);
-    //     using var archive = new ZipArchive(ms); ;
-    //     var fileDict = FileProcessingService.GetEntriesFromZipFile(archive);
-    //     var data = ExcelService.ExtractPartsData(fileDict);
-    //     foundDuplicates.AddRange(DataComparerService.CompareData(data));
-    //     processingStatus = "Processing done!";
-    //     isFileProcessed = true;
-    //     this.StateHasChanged();
-    // }
-
     private async void ProcessMultipleFiles(InputFileChangeEventArgs e)
     {
         isFileProcessed = false;
@@ -145,17 +126,3 @@
         await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }
 }
-
-@* <script>
-    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
-        const arrayBuffer = await contentStreamReference.arrayBuffer();
-        const blob = new Blob([arrayBuffer]);
-        const url = URL.createObjectURL(blob);
-        const anchorElement = document.createElement('a');
-        anchorElement.href = url;
-        anchorElement.download = fileName ?? '';
-        anchorElement.click();
-        anchorElement.remove();
-        URL.revokeObjectURL(url);
-    }
-</script> *@

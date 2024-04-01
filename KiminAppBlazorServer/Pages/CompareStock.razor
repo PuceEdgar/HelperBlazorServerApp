@@ -4,7 +4,6 @@
 @using System.IO.Compression
 @using System.Text
 @using System.Text.Json.Serialization
-@inject IZipFileService FileProcessingService
 @inject IExcelService ExcelService
 @inject IDataComparerService DataComparerService
 @inject IJSRuntime JS
@@ -56,19 +55,11 @@
             loadedFiles.Add(file);
             using var stream = file.OpenReadStream(maxSize);
 
-            // if (file.Name.Contains("csv", StringComparison.CurrentCultureIgnoreCase))
-            // {
-            //     rbStock = await ExcelService.ExtractStockDetailsFromCsvStream(stream);
-            // }
-            // else
-            // {
-            //     mfgStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream);
-            // }
-
             if (file.Name.Contains("mfg", StringComparison.CurrentCultureIgnoreCase))
             {
                 mfgStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream, FileSource.Mfg);
-            } else
+            }
+            else
             {
                 rbStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream, FileSource.RbInventory);
             }
@@ -93,7 +84,7 @@
         ms.Seek(0, SeekOrigin.Begin);
         using var streamRef = new DotNetStreamReference(stream: ms, true);
 
-        await JS.InvokeVoidAsync("downloadFileFromStream", "test.xlsx", streamRef);
+        await JS.InvokeVoidAsync("downloadFileFromStream", "Inventory_compare_result.xlsx", streamRef);
 
         this.StateHasChanged();
     }

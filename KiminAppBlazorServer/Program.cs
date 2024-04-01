@@ -1,7 +1,4 @@
 using FileProcessingLibrary.Services;
-using KiminAppBlazorServer.Data;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace KiminAppBlazorServer
 {
@@ -14,9 +11,7 @@ namespace KiminAppBlazorServer
             // Add services to the container.
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
-            builder.Services.AddSingleton<WeatherForecastService>();
 
-            builder.Services.AddTransient<IZipFileService, ZipFileService>();
             builder.Services.AddTransient<IExcelService, ExcelService>();
             builder.Services.AddTransient<IDataComparerService, DataComparerService>();
 
