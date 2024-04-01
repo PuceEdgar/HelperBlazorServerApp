@@ -1,0 +1,113 @@
+﻿@page "/comparestock"
+@using FileProcessingLibrary
+@using FileProcessingLibrary.Services
+@using System.IO.Compression
+@using System.Text
+@using System.Text.Json.Serialization
+@inject IZipFileService FileProcessingService
+@inject IExcelService ExcelService
+@inject IDataComparerService DataComparerService
+@inject IJSRuntime JS
+
+<PageTitle>Compare Stock</PageTitle>
+
+<h3>Compare Stock</h3>
+<h5>You need to upload 2 files at the same time. Select MFG file and RB inventory file.</h5>
+
+<p>
+    <label>
+        <InputFile OnChange="ProcessFiles" multiple />
+    </label>
+</p>
+
+<ul>
+    @foreach (var file in loadedFiles)
+    {
+        <li>
+            <ul>
+                <li>Name: @file.Name</li>
+                <li>Last modified: @file.LastModified.ToString()</li>
+            </ul>
+        </li>
+    }
+</ul>
+
+@code {
+    private List<IBrowserFile> loadedFiles = new();
+    private long maxSize = 1024 * 3000;
+    private int maxAllowedFiles = 2;
+    private string processingStatus = string.Empty;
+    private List<PartExistsData> foundDuplicates = new();
+    private bool isFileProcessed;
+    string? report = null;
+
+    private async void ProcessFiles(InputFileChangeEventArgs e)
+    {
+        isFileProcessed = false;
+        processingStatus = "Processing your files...";
+        loadedFiles.Clear();
+        foundDuplicates.Clear();
+
+        List<StockDetails> mfgStock = [];
+        List<StockDetails> rbStock = [];
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            loadedFiles.Add(file);
+            using var stream = file.OpenReadStream(maxSize);
+
+            // if (file.Name.Contains("csv", StringComparison.CurrentCultureIgnoreCase))
+            // {
+            //     rbStock = await ExcelService.ExtractStockDetailsFromCsvStream(stream);
+            // }
+            // else
+            // {
+            //     mfgStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream);
+            // }
+
+            if (file.Name.Contains("mfg", StringComparison.CurrentCultureIgnoreCase))
+            {
+                mfgStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream, FileSource.Mfg);
+            } else
+            {
+                rbStock = await ExcelService.ExtractStockDetailsFromExcelStream(stream, FileSource.RbInventory);
+            }
+
+        }
+
+        var groupedMFGItems = new GroupedStockItem
+            {
+                StockSource = FileSource.Mfg,
+                GroupedStockList = GroupItemsByVendorAndOrderByPart(mfgStock)
+            };
+
+        var groupedRBItems = new GroupedStockItem
+            {
+                StockSource = FileSource.RbInventory,
+                GroupedStockList = GroupItemsByVendorAndOrderByPart(rbStock)
+            };
+
+        var wb = ExcelService.CompareItems(groupedMFGItems, groupedRBItems);
+        MemoryStream ms = new MemoryStream();
+        wb.Write(ms, true);
+        ms.Seek(0, SeekOrigin.Begin);
+        using var streamRef = new DotNetStreamReference(stream: ms, true);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", "test.xlsx", streamRef);
+
+        this.StateHasChanged();
+    }
+
+    private static List<StockDetails> GroupItemsByVendorAndOrderByPart(List<StockDetails> stockDetails)
+    {
+        var groupedByVendor = stockDetails.GroupBy(v => new { v.CustomerNumber, v.PartNumber }).Select(p => new StockDetails
+            {
+                CustomerNumber = p.Select(x => x.CustomerNumber).FirstOrDefault(),
+                UnitPrice = p.Select(x => x.UnitPrice).FirstOrDefault(),
+                PartNumber = p.Select(x => x.PartNumber).FirstOrDefault(),
+                Qty = p.Sum(x => x.Qty)
+            });
+        var orderedByPart = groupedByVendor.OrderByDescending(x => x.PartNumber).ToList();
+        return orderedByPart;
+    }
+}

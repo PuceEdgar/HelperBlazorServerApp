@@ -1,0 +1,161 @@
+﻿@page "/compareparts"
+@using FileProcessingLibrary
+@using FileProcessingLibrary.Services
+@using System.IO.Compression
+@using System.Text
+@using System.Text.Json.Serialization
+@inject IZipFileService FileProcessingService
+@inject IExcelService ExcelService
+@inject IDataComparerService DataComparerService
+@inject IJSRuntime JS
+
+<PageTitle>Compare parts</PageTitle>
+
+<h1>Compare parts</h1>
+<h5>You can upload up to 4 files at the same time. There MUST be REN CORE master file and any file of RB billing, RB backlog and MFG.</h5>
+<br/>
+<p>REN CORE file name <b>must(!)</b> have <b>master</b> in its name</p>
+<p>RB billing file name <b>must(!)</b> have <b>rb</b> and <b>billing</b> in its name</p>
+<p>RB backlog file <b>must(!)</b> have <b>rb</b>  and <b>backlog</b> in its name</p>
+<p>MFG file <b>must(!)</b> have <b>mfg</b> in its name</p>
+<br/>
+<p>
+    <label>
+        <InputFile OnChange="ProcessMultipleFiles" multiple />
+    </label>
+</p>
+
+<p>@processingStatus</p>
+<ul>
+    @foreach (var file in loadedFiles)
+    {
+        <li>
+            <ul>
+                <li>Name: @file.Name</li>
+                <li>Last modified: @file.LastModified.ToString()</li>
+            </ul>
+        </li>
+    }
+</ul>
+
+@if (isFileProcessed && foundDuplicates.Count > 0)
+{
+    <p>Found dublicate parts. See details below.</p>
+    <ul>
+        @foreach (var item in foundDuplicates)
+        {
+            <li>
+                <ul>
+                    <li>File source: @item.SourceData</li>
+                    <li>Part number: @item.PartNumber</li>
+                </ul>
+            </li>
+        }
+    </ul>
+    <button @onclick="DownloadFileFromStream">
+        Download File From Stream
+    </button>
+} else if (isFileProcessed && foundDuplicates.Count == 0)
+{
+    <p>No duplicates found!</p>
+}
+
+
+@code {
+    private List<IBrowserFile> loadedFiles = new();
+    private long maxSize = 1024 * 3000;
+    private int maxAllowedFiles = 4;
+    private string processingStatus = string.Empty;
+    private List<PartExistsData> foundDuplicates = new();
+    private bool isFileProcessed;
+    string? report = null;
+
+    // private async void ProcessFile(InputFileChangeEventArgs e)
+    // {
+    //     isFileProcessed = false;
+    //     processingStatus = "Processing your file...";
+    //     loadedFiles.Clear();
+    //     foundDuplicates.Clear();
+    //     loadedFiles.Add(e.File);
+    //     await using var ms = new MemoryStream();
+    //     await e.File.OpenReadStream(maxSize).CopyToAsync(ms);
+    //     using var archive = new ZipArchive(ms); ;
+    //     var fileDict = FileProcessingService.GetEntriesFromZipFile(archive);
+    //     var data = ExcelService.ExtractPartsData(fileDict);
+    //     foundDuplicates.AddRange(DataComparerService.CompareData(data));
+    //     processingStatus = "Processing done!";
+    //     isFileProcessed = true;
+    //     this.StateHasChanged();
+    // }
+
+    private async void ProcessMultipleFiles(InputFileChangeEventArgs e)
+    {
+        isFileProcessed = false;
+        processingStatus = "Processing your file...";
+        loadedFiles.Clear();
+        foundDuplicates.Clear();
+
+
+        var partsData = new Dictionary<FileSource, List<string>>();
+        foreach (var file in e.GetMultipleFiles())
+        {
+            loadedFiles.Add(file);
+            await using var stream = new MemoryStream();
+            await file.OpenReadStream(maxSize).CopyToAsync(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            switch (file.Name)
+            {
+                case string s when s.Contains("master", StringComparison.CurrentCultureIgnoreCase):
+                    partsData.Add(FileSource.Master, ExcelService.ReadPartDataFromStream(stream, 1, 4, 6, true));
+                    break;
+                case string s when s.Contains("rb", StringComparison.CurrentCultureIgnoreCase) && s.Contains("backlog", StringComparison.CurrentCultureIgnoreCase):
+                    partsData.Add(FileSource.RbBacklog, ExcelService.ReadPartDataFromStream(stream, 0, 1, 21));
+                    break;
+                case string s when s.Contains("rb", StringComparison.CurrentCultureIgnoreCase) && s.Contains("billing", StringComparison.CurrentCultureIgnoreCase):
+                    partsData.Add(FileSource.RbBilling, ExcelService.ReadPartDataFromStream(stream, 0, 4, 21));
+                    break;
+                case string s when s.Contains("mfg", StringComparison.CurrentCultureIgnoreCase):
+                    partsData.Add(FileSource.Mfg, ExcelService.ReadPartDataFromStream(stream, 0, 1, 4));
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        foundDuplicates.AddRange(DataComparerService.CompareData(partsData));
+        processingStatus = "Processing done!";
+        isFileProcessed = true;
+        this.StateHasChanged();
+    }
+
+    private Stream GetFileStream()
+    {
+        var st = string.Join("\n", foundDuplicates.Select(d => d.ToString()));
+        byte[] byteArray = Encoding.ASCII.GetBytes(st);
+        return new MemoryStream(byteArray);
+    }
+
+    private async Task DownloadFileFromStream()
+    {
+        var fileStream = GetFileStream();
+        var fileName = "log.txt";
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+}
+
+@* <script>
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        const arrayBuffer = await contentStreamReference.arrayBuffer();
+        const blob = new Blob([arrayBuffer]);
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+        anchorElement.download = fileName ?? '';
+        anchorElement.click();
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+    }
+</script> *@

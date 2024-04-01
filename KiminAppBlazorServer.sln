@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34511.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KiminAppBlazorServer", "KiminAppBlazorServer\KiminAppBlazorServer.csproj", "{05D2B893-C6E8-4E6B-9714-45AC4F80DCD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileProcessingLibrary", "FileProcessingLibrary\FileProcessingLibrary.csproj", "{FA198FD1-A191-405F-9C66-0A21BEEC54AE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{05D2B893-C6E8-4E6B-9714-45AC4F80DCD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D2B893-C6E8-4E6B-9714-45AC4F80DCD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05D2B893-C6E8-4E6B-9714-45AC4F80DCD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05D2B893-C6E8-4E6B-9714-45AC4F80DCD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA198FD1-A191-405F-9C66-0A21BEEC54AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA198FD1-A191-405F-9C66-0A21BEEC54AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA198FD1-A191-405F-9C66-0A21BEEC54AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA198FD1-A191-405F-9C66-0A21BEEC54AE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6B427AE1-A374-4405-85F9-92F804CDDBEE}
+	EndGlobalSection
+EndGlobal
