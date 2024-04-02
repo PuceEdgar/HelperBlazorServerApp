@@ -2,7 +2,7 @@ using FileProcessingLibrary.Services;
 
 namespace KiminAppBlazorServer
 {
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
