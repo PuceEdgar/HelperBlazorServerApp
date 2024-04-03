@@ -19,6 +19,7 @@
     </label>
 </p>
 
+<p>@processingStatus</p>
 <ul>
     @foreach (var file in loadedFiles)
     {
@@ -32,20 +33,14 @@
 </ul>
 
 @code {
-    private List<IBrowserFile> loadedFiles = new();
-    private long maxSize = 1024 * 3000;
-    private int maxAllowedFiles = 2;
+    private readonly List<IBrowserFile> loadedFiles = new();
+    private readonly long maxSize = 1024 * 3000;
     private string processingStatus = string.Empty;
-    private List<PartExistsData> foundDuplicates = new();
-    private bool isFileProcessed;
-    string? report = null;
 
     private async void ProcessFiles(InputFileChangeEventArgs e)
     {
-        isFileProcessed = false;
         processingStatus = "Processing your files...";
         loadedFiles.Clear();
-        foundDuplicates.Clear();
 
         List<StockDetails> mfgStock = [];
         List<StockDetails> rbStock = [];
@@ -85,7 +80,7 @@
         using var streamRef = new DotNetStreamReference(stream: ms, true);
 
         await JS.InvokeVoidAsync("downloadFileFromStream", "Inventory_compare_result.xlsx", streamRef);
-
+        processingStatus = "Processing done!";
         this.StateHasChanged();
     }
 

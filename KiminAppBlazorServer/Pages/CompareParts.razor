@@ -37,37 +37,38 @@
     }
 </ul>
 
-@if (isFileProcessed && foundDuplicates.Count > 0)
+@if (isFileProcessed)
 {
-    <p>Found dublicate parts. See details below.</p>
-    <ul>
-        @foreach (var item in foundDuplicates)
-        {
-            <li>
-                <ul>
-                    <li>File source: @item.SourceData</li>
-                    <li>Part number: @item.PartNumber</li>
-                </ul>
-            </li>
-        }
-    </ul>
-    <button @onclick="DownloadFileFromStream">
-        Download File From Stream
-    </button>
-} else if (isFileProcessed && foundDuplicates.Count == 0)
-{
-    <p>No duplicates found!</p>
+    if (foundDuplicates.Count > 0)
+    {
+        <p>Found dublicate parts. See details below.</p>
+        <ul>
+            @foreach (var item in foundDuplicates)
+            {
+                <li>
+                    <ul>
+                        <li>File source: @item.SourceData</li>
+                        <li>Part number: @item.PartNumber</li>
+                    </ul>
+                </li>
+            }
+        </ul>
+        <button @onclick="DownloadFileFromStream">
+            Download File From Stream
+        </button>
+    }
+    else
+    {
+        <p>No duplicates found!</p>
+    }
 }
 
-
 @code {
-    private List<IBrowserFile> loadedFiles = new();
-    private long maxSize = 1024 * 3000;
-    private int maxAllowedFiles = 4;
+    private readonly List<IBrowserFile> loadedFiles = new();
+    private readonly long maxSize = 1024 * 3000;
     private string processingStatus = string.Empty;
-    private List<PartExistsData> foundDuplicates = new();
+    private readonly List<PartExistsData> foundDuplicates = new();
     private bool isFileProcessed;
-    string? report = null;
 
     private async void ProcessMultipleFiles(InputFileChangeEventArgs e)
     {
