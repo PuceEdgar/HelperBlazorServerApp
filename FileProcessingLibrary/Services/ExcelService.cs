@@ -7,7 +7,7 @@ public class ExcelService : IExcelService
 {
     public  List<string> ReadPartDataFromStream(Stream stream, int sheetNumber, int startingRow, int columnNumber, bool isMaster = false)
     {
-        var wb = new XSSFWorkbook(stream);
+        XSSFWorkbook wb = new(stream);
         var sheet = wb.GetSheetAt(sheetNumber);
 
         return ReadColumnFromSheet(sheet, startingRow, columnNumber, isMaster);
@@ -15,12 +15,12 @@ public class ExcelService : IExcelService
 
     public async Task<List<StockDetails>> ExtractStockDetailsFromExcelStream(Stream stream, FileSource fileSource)
     {
-        var stockDetailsList = new List<StockDetails>();
-        using var ms = new MemoryStream();
+        List<StockDetails> stockDetailsList = [];
+        using MemoryStream ms = new();
         await stream.CopyToAsync(ms);
         ms.Seek(0, SeekOrigin.Begin);
 
-        var wb = new XSSFWorkbook(ms);
+        XSSFWorkbook wb = new(ms);
 
         if (fileSource == FileSource.Mfg)
         {
@@ -49,7 +49,7 @@ public class ExcelService : IExcelService
                 continue;
             }
 
-            stockDetailsList.Add(new StockDetails
+            stockDetailsList.Add(new()
             {
                 PartNumber = row.GetCell(partNoCol)?.StringCellValue.Trim(),
                 CustomerNumber = row.GetCell(customerNumberCol)?.StringCellValue.Trim(),

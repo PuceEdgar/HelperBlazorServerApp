@@ -2,6 +2,6 @@
 
 public record PartExistsData
 {
-    public string? SourceData { get; set; }
+    public FileSource SourceData { get; set; }
     public string? PartNumber { get; set; }
 }

@@ -7,7 +7,7 @@ public class DataComparerService : IDataComparerService
 {
     public List<PartExistsData> CompareData(Dictionary<FileSource, List<string>> dataDict)
     {
-        var existingItems = new List<PartExistsData>();
+        List<PartExistsData> existingItems = [];
 
         foreach (var part in dataDict[FileSource.Master])
         {
@@ -19,24 +19,8 @@ public class DataComparerService : IDataComparerService
 
     public IWorkbook CompareItems(GroupedStockItem groupedMFGItems, GroupedStockItem groupedRBItems)
     {
-        var missingItems = new List<MissingItem>();
-
-        var workbook = new XSSFWorkbook();
-        var sheet = workbook.CreateSheet("Compare Stock");
-
-        var row = sheet.CreateRow(0);
-        row.CreateCell(0).SetCellValue("RB Part");
-        row.CreateCell(1).SetCellValue("RB Customer");
-        row.CreateCell(2).SetCellValue("RB Qty");
-        row.CreateCell(3).SetCellValue("RB Price");
-        row.CreateCell(4).SetCellValue("RB Rounded Price");
-        row.CreateCell(5).SetCellValue("MFG Part");
-        row.CreateCell(6).SetCellValue("MFG Customer");
-        row.CreateCell(7).SetCellValue("MFG Qty");
-        row.CreateCell(8).SetCellValue("MFG Price");
-        row.CreateCell(9).SetCellValue("QTY MATCH");
-        row.CreateCell(10).SetCellValue("Calculated PRICE MATCH");
-        row.CreateCell(11).SetCellValue("Rounded PRICE MATCH");
+        List<MissingItem> missingItems = [];
+        CreateSheet(out XSSFWorkbook workbook, out ISheet sheet);
         var rowNumber = 1;
 
         foreach (var mfgItem in groupedMFGItems.GroupedStockList)
@@ -45,7 +29,7 @@ public class DataComparerService : IDataComparerService
             if (rbItem is null)
             {
                 Console.WriteLine($"Item: {mfgItem.CustomerNumber} {mfgItem.PartNumber} Exists in MFG but not in RB.");
-                missingItems.Add(new MissingItem
+                missingItems.Add(new()
                 {
                     CustomerNumber = mfgItem.CustomerNumber!,
                     PartNumber = mfgItem.PartNumber!,
@@ -67,7 +51,7 @@ public class DataComparerService : IDataComparerService
             if (mfgItem is null)
             {
                 Console.WriteLine($"Item: {rbItem.CustomerNumber} {rbItem.PartNumber} Exists in RB but not in MFG.");
-                missingItems.Add(new MissingItem
+                missingItems.Add(new()
                 {
                     CustomerNumber = rbItem.CustomerNumber!,
                     PartNumber = rbItem.PartNumber!,
@@ -93,13 +77,32 @@ public class DataComparerService : IDataComparerService
         return workbook;
     }
 
+    private static void CreateSheet(out XSSFWorkbook workbook, out ISheet sheet)
+    {
+        workbook = new();
+        sheet = workbook.CreateSheet("Compare Stock");
+        var row = sheet.CreateRow(0);
+        row.CreateCell(0).SetCellValue("RB Part");
+        row.CreateCell(1).SetCellValue("RB Customer");
+        row.CreateCell(2).SetCellValue("RB Qty");
+        row.CreateCell(3).SetCellValue("RB Price");
+        row.CreateCell(4).SetCellValue("RB Rounded Price");
+        row.CreateCell(5).SetCellValue("MFG Part");
+        row.CreateCell(6).SetCellValue("MFG Customer");
+        row.CreateCell(7).SetCellValue("MFG Qty");
+        row.CreateCell(8).SetCellValue("MFG Price");
+        row.CreateCell(9).SetCellValue("QTY MATCH");
+        row.CreateCell(10).SetCellValue("Calculated PRICE MATCH");
+        row.CreateCell(11).SetCellValue("Rounded PRICE MATCH");
+    }
+
     private static void CheckIfPartExists(Dictionary<FileSource, List<string>> dataDict, List<PartExistsData> existingItems, string part)
     {
         existingItems
             .AddRange(dataDict.Keys.Where(key => key != FileSource.Master && dataDict[key].Contains(part))
             .Select(key => new PartExistsData
             {
-                SourceData = key.ToString(),
+                SourceData = key,
                 PartNumber = part,
             }));
     }
